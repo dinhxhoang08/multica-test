@@ -3,17 +3,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const addBtn = document.getElementById('add-btn');
     const todoList = document.getElementById('todo-list');
 
-    // Tải công việc từ localStorage
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    // Cấu hình IndexedDB
+    const dbName = 'TodoDB';
+    const storeName = 'tasks';
+    let db;
 
-    // Lưu công việc vào localStorage
-    const saveTasks = () => {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
+    const request = indexedDB.open(dbName, 1);
+
+    request.onerror = (event) => {
+        console.error('Database error:', event.target.error);
+    };
+
+    request.onupgradeneeded = (event) => {
+        db = event.target.result;
+        if (!db.objectStoreNames.contains(storeName)) {
+            db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+        }
+    };
+
+    request.onsuccess = (event) => {
+        db = event.target.result;
+        loadTasks();
+    };
+
+    // Hàm load công việc từ IndexedDB
+    const loadTasks = () => {
+        const transaction = db.transaction([storeName], 'readonly');
+        const store = transaction.objectStore(storeName);
+        const getAllRequest = store.getAll();
+
+        getAllRequest.onsuccess = () => {
+            todoList.innerHTML = '';
+            getAllRequest.result.forEach(renderTask);
+        };
     };
 
     // Hàm tạo element cho công việc và hiển thị
     const renderTask = (task) => {
         const li = document.createElement('li');
+        li.dataset.id = task.id;
         
         const span = document.createElement('span');
         span.textContent = task.text;
@@ -22,27 +50,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         span.addEventListener('click', () => {
-            span.classList.toggle('completed');
             task.completed = !task.completed;
-            saveTasks();
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            store.put(task);
+            
+            transaction.oncomplete = () => {
+                span.classList.toggle('completed');
+            };
         });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Xóa';
         deleteBtn.className = 'delete-btn';
         deleteBtn.addEventListener('click', () => {
-            todoList.removeChild(li);
-            tasks = tasks.filter(t => t !== task);
-            saveTasks();
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            store.delete(task.id);
+            
+            transaction.oncomplete = () => {
+                todoList.removeChild(li);
+            };
         });
 
         li.appendChild(span);
         li.appendChild(deleteBtn);
         todoList.appendChild(li);
     };
-
-    // Hiển thị danh sách ban đầu
-    tasks.forEach(renderTask);
 
     // Hàm thêm công việc mới
     const addTask = () => {
@@ -57,9 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
             completed: false
         };
 
-        tasks.push(newTask);
-        renderTask(newTask);
-        saveTasks();
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const addRequest = store.add(newTask);
+
+        addRequest.onsuccess = (event) => {
+            newTask.id = event.target.result;
+            renderTask(newTask);
+        };
 
         todoInput.value = "";
         todoInput.focus();
