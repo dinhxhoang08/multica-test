@@ -15,4 +15,4 @@ The project is a static web application. No build steps or complex installations
 - `README.md`: The original documentation for the project.
 
 ## CI/CD and Checks
-There are no GitHub workflows or automated CI/CD checks (e.g., linters, pre-commit hooks) configured in this repository.
+- **GitHub Actions**: A linting workflow is configured in `.github/workflows/lint.yml` to check JavaScript and HTML files using ESLint.
