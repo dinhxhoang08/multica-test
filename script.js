@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const todoInput = document.getElementById('todo-input');
     const addBtn = document.getElementById('add-btn');
+    const clearBtn = document.getElementById('clear-btn');
     const todoList = document.getElementById('todo-list');
 
     // Cấu hình IndexedDB
@@ -113,4 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
             addTask();
         }
     });
+
+    // Sự kiện click nút Xóa tất cả
+    clearBtn.addEventListener('click', () => {
+        if (confirm('Bạn có chắc chắn muốn xóa tất cả công việc?')) {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const clearRequest = store.clear();
+
+            clearRequest.onsuccess = () => {
+                todoList.innerHTML = '';
+            };
+        }
+    });
+
 });

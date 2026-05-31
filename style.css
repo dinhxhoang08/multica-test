@@ -78,3 +78,13 @@ li:last-child {
 .delete-btn:hover {
     background-color: #c82333;
 }
+
+.clear-btn {
+    background-color: #f44336;
+    margin-left: 5px;
+}
+
+.clear-btn:hover {
+    background-color: #d32f2f;
+}
+
